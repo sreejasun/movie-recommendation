@@ -45,7 +45,6 @@ movie_recommendation/
 │   ├── mf_d_sensitivity.csv     ← d vs RMSE/MAE
 │   └── model_comparison.png     ← Bar chart comparing all models
 │
-├── report/                      ← Place your final report PDF here
 ├── run_all.py                   ← Single-script end-to-end pipeline
 ├── requirements.txt
 └── README.md
