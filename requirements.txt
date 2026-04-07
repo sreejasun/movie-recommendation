@@ -1,0 +1,10 @@
+numpy>=1.24
+pandas>=1.5
+scikit-learn>=1.2
+scikit-surprise>=1.1
+matplotlib>=3.6
+seaborn>=0.12
+pyarrow>=11.0
+jupyter>=1.0
+notebook>=6.5
+ipykernel>=6.0
