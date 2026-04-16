@@ -40,7 +40,12 @@ movie_recommendation/
 │   └── 05_evaluation.ipynb      ← Final comparison, error analysis, report plots
 │
 ├── results/                     ← Auto-generated: CSVs + PNG plots
+│   ├── all_model_results.csv    ← Master comparison table (all models)
+│   ├── knn_sensitivity.csv      ← k vs RMSE/MAE
+│   ├── mf_d_sensitivity.csv     ← d vs RMSE/MAE
+│   └── model_comparison.png     ← Bar chart comparing all models
 │
+├── report/                      ← Place your final report PDF here
 ├── run_all.py                   ← Single-script end-to-end pipeline
 ├── requirements.txt
 └── README.md

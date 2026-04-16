@@ -4,31 +4,7 @@ __pycache__/
 data/*.csv
 data/*.parquet
 data/*.gz
-results/*.png
-results/*.csv
 *.egg-info/
 .DS_Store
-
-# Python cache
-__pycache__/
-*.py[cod]
-
-# Large data files
-data/rating.csv
-data/movie.csv
-data/tag.csv
-data/genome_scores.csv
-data/genome_tags.csv
-data/link.csv
-data/train.parquet
-data/test.parquet
-
-# Logs
-results/full_run_log.txt
-
-# Jupyter checkpoints
-.ipynb_checkpoints/
-
-# OS files
-.DS_Store
-Thumbs.db
+.venv/
+frontend/node_modules/

@@ -12,6 +12,7 @@ Usage
 
 import argparse
 import os
+import re
 import time
 import numpy as np
 import pandas as pd
@@ -20,7 +21,16 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from src.preprocessing        import load_ratings, load_movies, encode_ids, per_user_split, sparsity_report
-from src.evaluation           import rating_metrics, topk_metrics
+from src.evaluation           import (
+    rating_metrics,
+    topk_metrics,
+    binary_like_confusion_matrix,
+    binary_rates_from_confusion,
+    half_star_confusion_matrix,
+    save_all_binary_confusion_grid,
+    save_binary_confusion_figure,
+    save_halfstar_confusion_figure,
+)
 from src.baselines            import GlobalMean, UserMean, ItemMean, BiasModel
 from src.knn_cf               import SurpriseKNN, knn_sensitivity, get_topk_recs_knn
 from src.matrix_factorization import (SurpriseMF, mf_sensitivity,
@@ -41,6 +51,10 @@ def parse_args():
 
 def section(title):
     print(f"\n{'='*60}\n  {title}\n{'='*60}")
+
+
+def _safe_filename_fragment(name: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9]+", "_", name).strip("_").lower()
 
 
 def save_sensitivity_plot(df, title, xlabel, filename):
@@ -87,9 +101,14 @@ def main():
     # ── 2. Baselines ──────────────────────────────────────────────────
     section("STEP 2: Baseline models")
 
-    results["GlobalMean"] = GlobalMean().fit(train).evaluate(test)
-    results["UserMean"]   = UserMean().fit(train).evaluate(test)
-    results["ItemMean"]   = ItemMean().fit(train).evaluate(test)
+    gm = GlobalMean().fit(train)
+    results["GlobalMean"] = gm.evaluate(test)
+
+    um = UserMean().fit(train)
+    results["UserMean"] = um.evaluate(test)
+
+    im = ItemMean().fit(train)
+    results["ItemMean"] = im.evaluate(test)
 
     print("Training BiasModel ...")
     bm = BiasModel(n_users=n_users, n_items=n_movies, lam=0.1, lr=0.005, n_epochs=20)
@@ -97,6 +116,7 @@ def main():
     results["BiasModel"] = bm.evaluate(test)
 
     # ── 3. kNN ────────────────────────────────────────────────────────
+    knn = None
     if not args.no_knn:
         section("STEP 3: kNN Collaborative Filtering")
         t0 = time.time()
@@ -187,6 +207,67 @@ def main():
     pd.DataFrame([topk_mf]).to_csv("results/mf_topk_metrics.csv", index=False)
 
     print(f"MF total time: {(time.time()-t0)/60:.1f} min")
+
+    # ── 4b. Confusion matrices (same test subset for all models) ─────
+    section("STEP 4b: Confusion matrices (binary like / dislike + MF half-stars)")
+    cm_threshold = 4.0
+    cm_max_rows = min(150_000, len(test))
+    cm_sub = (
+        test
+        if len(test) <= cm_max_rows
+        else test.sample(cm_max_rows, random_state=SEED)
+    )
+    y_true_cm = cm_sub["rating"].values
+
+    named_binary = [
+        ("GlobalMean", binary_like_confusion_matrix(y_true_cm, gm.predict(cm_sub), cm_threshold)),
+        ("UserMean", binary_like_confusion_matrix(y_true_cm, um.predict(cm_sub), cm_threshold)),
+        ("ItemMean", binary_like_confusion_matrix(y_true_cm, im.predict(cm_sub), cm_threshold)),
+        ("BiasModel", binary_like_confusion_matrix(y_true_cm, bm.predict(cm_sub), cm_threshold)),
+    ]
+    if knn is not None:
+        named_binary.append(
+            (
+                f"KNN (k={knn.k})",
+                binary_like_confusion_matrix(y_true_cm, knn.predict_df(cm_sub), cm_threshold),
+            )
+        )
+    named_binary.append(
+        (
+            f"MF (d={best_d})",
+            binary_like_confusion_matrix(y_true_cm, mf.predict_df(cm_sub), cm_threshold),
+        )
+    )
+
+    save_all_binary_confusion_grid(
+        named_binary,
+        "results/cm_binary_all_models.png",
+        threshold=cm_threshold,
+    )
+    print("  Saved results/cm_binary_all_models.png")
+
+    summary_rows = []
+    for name, cm in named_binary:
+        save_binary_confusion_figure(
+            cm,
+            f"{name}\n(binary, n={len(cm_sub):,})",
+            f"results/cm_binary_{_safe_filename_fragment(name)}.png",
+            threshold=cm_threshold,
+        )
+        row = {"model": name, "n_pairs": len(cm_sub)}
+        row.update(binary_rates_from_confusion(cm))
+        summary_rows.append(row)
+    pd.DataFrame(summary_rows).to_csv("results/confusion_binary_summary.csv", index=False)
+    print("  Saved per-model binary CM PNG/CSV and results/confusion_binary_summary.csv")
+
+    cm_hs, labels_hs = half_star_confusion_matrix(y_true_cm, mf.predict_df(cm_sub))
+    save_halfstar_confusion_figure(
+        cm_hs,
+        labels_hs,
+        f"MF (d={best_d}) — half-star buckets (n={len(cm_sub):,})",
+        "results/cm_halfstar_mf.png",
+    )
+    print("  Saved results/cm_halfstar_mf.png (+ .csv)")
 
     # ── 5. Final comparison ───────────────────────────────────────────
     section("STEP 5: Final results")

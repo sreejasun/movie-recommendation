@@ -1,0 +1,164 @@
+
+============================================================
+  STEP 1: Data loading & preprocessing
+============================================================
+[load_ratings] reading data/rating.csv ...
+[load_ratings] loaded 20,000,263 rows
+[encode_ids] 138,493 users  |  26,744 movies
+
+────────────────────────────────────────
+  Users   :    138,493
+  Movies  :     26,744
+  Ratings : 20,000,263
+  Density : 0.5400%
+────────────────────────────────────────
+
+[per_user_split] train=16,052,927  test=3,947,336
+Splits saved.  n_users=138,493  n_movies=26,744
+
+============================================================
+  STEP 2: Baseline models
+============================================================
+[GlobalMean] μ = 3.5385
+[GlobalMean]  RMSE=1.0434  MAE=0.8247
+[UserMean]  RMSE=0.9710  MAE=0.7493
+[ItemMean]  RMSE=0.9375  MAE=0.7249
+Training BiasModel ...
+  [BiasModel] epoch   5/20  train RMSE=0.8578
+  [BiasModel] epoch  10/20  train RMSE=0.8546
+  [BiasModel] epoch  15/20  train RMSE=0.8536
+  [BiasModel] epoch  20/20  train RMSE=0.8534
+[BiasModel]  RMSE=0.8624  MAE=0.6580
+
+============================================================
+  STEP 3: kNN Collaborative Filtering
+============================================================
+Running k sensitivity sweep ...
+[knn_sensitivity] training on 16,052,927 rows  evaluating on 1,184,201 test rows
+[SurpriseKNN] fitted  k=10  sim=pearson  min_support=3  (2324.5s)
+[KNN k=10]  RMSE=0.8493  MAE=0.6403
+[SurpriseKNN] fitted  k=20  sim=pearson  min_support=3  (1377.8s)
+[KNN k=20]  RMSE=0.8338  MAE=0.6292
+[SurpriseKNN] fitted  k=40  sim=pearson  min_support=3  (1313.0s)
+[KNN k=40]  RMSE=0.8299  MAE=0.6269
+[SurpriseKNN] fitted  k=60  sim=pearson  min_support=3  (1314.2s)
+[KNN k=60]  RMSE=0.8305  MAE=0.6279
+[SurpriseKNN] fitted  k=80  sim=pearson  min_support=3  (8946.2s)
+[KNN k=80]  RMSE=0.8317  MAE=0.6292
+        RMSE       MAE
+k                     
+10  0.849273  0.640337
+20  0.833812  0.629238
+40  0.829876  0.626946
+60  0.830480  0.627950
+80  0.831693  0.629229
+  Plot saved: results/knn_k_sensitivity.png
+
+Best k=40. Training final kNN on full data ...
+[SurpriseKNN] fitted  k=40  sim=pearson  min_support=3  (1286.1s)
+[KNN k=40]  RMSE=0.8301  MAE=0.6274
+
+kNN Top-10 ranking metrics:
+  Precision@10: 0.5496
+  Recall@10: 0.7108
+  NDCG@10: 0.8694
+kNN total time: 328.2 min
+
+============================================================
+  STEP 4: Matrix Factorization
+============================================================
+Running d sensitivity sweep (50% subsample, 30 epochs) ...
+[mf_sensitivity] 8,026,464 train / 1,184,201 test rows
+[SurpriseMF] fitted  d=10  epochs=30  reg=0.02  (158.1s)
+[MF d=10]  RMSE=0.8298  MAE=0.6288
+[SurpriseMF] fitted  d=20  epochs=30  reg=0.02  (164.8s)
+[MF d=20]  RMSE=0.8291  MAE=0.6283
+[SurpriseMF] fitted  d=50  epochs=30  reg=0.02  (186.6s)
+[MF d=50]  RMSE=0.8360  MAE=0.6336
+[SurpriseMF] fitted  d=100  epochs=30  reg=0.02  (226.6s)
+[MF d=100]  RMSE=0.8408  MAE=0.6385
+[SurpriseMF] fitted  d=150  epochs=30  reg=0.02  (253.6s)
+[MF d=150]  RMSE=0.8440  MAE=0.6412
+[SurpriseMF] fitted  d=200  epochs=30  reg=0.02  (283.8s)
+[MF d=200]  RMSE=0.8455  MAE=0.6429
+         RMSE       MAE
+d                      
+10   0.829796  0.628839
+20   0.829071  0.628268
+50   0.836028  0.633618
+100  0.840818  0.638545
+150  0.843959  0.641171
+200  0.845505  0.642874
+  Plot saved: results/mf_d_sensitivity.png
+
+Best d=20
+
+Running lambda sensitivity sweep (50% subsample, d=20) ...
+[mf_lambda_sensitivity] best_d=20  8,026,464 train / 1,184,201 test rows
+[SurpriseMF] fitted  d=20  epochs=30  reg=0.001  (180.1s)
+[MF lam=0.001]  RMSE=0.8597  MAE=0.6495
+[SurpriseMF] fitted  d=20  epochs=30  reg=0.005  (168.0s)
+[MF lam=0.005]  RMSE=0.8476  MAE=0.6413
+[SurpriseMF] fitted  d=20  epochs=30  reg=0.01  (163.1s)
+[MF lam=0.01]  RMSE=0.8393  MAE=0.6355
+[SurpriseMF] fitted  d=20  epochs=30  reg=0.02  (164.1s)
+[MF lam=0.02]  RMSE=0.8293  MAE=0.6284
+[SurpriseMF] fitted  d=20  epochs=30  reg=0.05  (168.1s)
+[MF lam=0.05]  RMSE=0.8342  MAE=0.6334
+[SurpriseMF] fitted  d=20  epochs=30  reg=0.1  (168.2s)
+[MF lam=0.1]  RMSE=0.8556  MAE=0.6516
+[SurpriseMF] fitted  d=20  epochs=30  reg=0.2  (174.0s)
+[MF lam=0.2]  RMSE=0.8733  MAE=0.6674
+            RMSE       MAE
+lambda                    
+0.001   0.859710  0.649490
+0.005   0.847624  0.641332
+0.010   0.839287  0.635457
+0.020   0.829330  0.628353
+0.050   0.834168  0.633422
+0.100   0.855594  0.651554
+0.200   0.873289  0.667398
+  Plot saved: results/mf_lambda_sensitivity.png
+
+Best d=20, best lambda=0.02
+Training final MF on full data ...
+[SurpriseMF] fitted  d=20  epochs=20  reg=0.02  (78.4s)
+[MF d=20]  RMSE=0.7958  MAE=0.6027
+
+MF Top-10 ranking metrics:
+  Precision@10: 0.5544
+  Recall@10: 0.7141
+  NDCG@10: 0.8690
+MF total time: 51.7 min
+
+============================================================
+  STEP 5: Final results
+============================================================
+                RMSE       MAE
+GlobalMean  1.043403  0.824663
+UserMean    0.971049  0.749292
+ItemMean    0.937519  0.724883
+BiasModel   0.862435  0.657993
+KNN (k=40)  0.830053  0.627368
+MF (d=20)   0.795774  0.602746
+Plot saved: results/model_comparison.png
+
+============================================================
+  STEP 6: Sample Top-10 Recommendations (MF)
+============================================================
+
+Top-10 for user 1 (rated 140 movies in training):
+
+   1. Phone Box, The (Cabina, La) (1972)                      4.40
+   2. Matrix, The (1999)                                      4.35
+   3. Avengers, The (2012)                                    4.34
+   4. Inception (2010)                                        4.34
+   5. Frozen Planet (2011)                                    4.33
+   6. Dylan Moran: Like, Totally (2006)                       4.28
+   7. Century of the Self, The (2002)                         4.27
+   8. Dark Knight, The (2008)                                 4.26
+   9. Fear City: A Family-Style Comedy (La cité de la peur) (1994) 4.26
+  10. About Time (2013)                                       4.26
+
+Total runtime: 401.9 minutes
+All results saved to results/
