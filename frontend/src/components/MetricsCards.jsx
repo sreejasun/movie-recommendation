@@ -23,6 +23,18 @@ export default function MetricsCards({ metrics, isLoading }) {
         <p className="text-sm text-slate-500 dark:text-slate-400">Test-set quality indicators</p>
       </div>
 
+      {metrics?.recommendation_engine ? (
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Live recommendations use{" "}
+          <span className="font-semibold text-slate-700 dark:text-slate-200">
+            {metrics.recommendation_engine === "mf"
+              ? "matrix factorization (SVD)"
+              : "the bias fallback"}
+          </span>
+          .
+        </p>
+      ) : null}
+
       {isLoading ? (
         <div className="glass-panel">
           <div className="px-5 pt-5 text-sm text-slate-600 dark:text-slate-300">Loading metrics...</div>

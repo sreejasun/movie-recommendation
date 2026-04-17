@@ -34,7 +34,8 @@ from src.evaluation           import (
 from src.baselines            import GlobalMean, UserMean, ItemMean, BiasModel
 from src.knn_cf               import SurpriseKNN, knn_sensitivity, get_topk_recs_knn
 from src.matrix_factorization import (SurpriseMF, mf_sensitivity,
-                                      mf_lambda_sensitivity, get_topk_recs_mf)
+                                      mf_lambda_sensitivity, get_topk_recs_mf,
+                                      save_mf_model)
 
 os.makedirs("results", exist_ok=True)
 SEED = 42
@@ -196,6 +197,9 @@ def main():
     mf = SurpriseMF(d=best_d, n_epochs=20, lr_all=0.005, reg_all=best_lam)
     mf.fit(train)
     results[f"MF (d={best_d})"] = mf.evaluate(test, label=f"MF d={best_d}")
+    
+    # Save MF model for backend serving
+    save_mf_model(mf, "results/mf_model.pkl")
 
     # Top-K ranking metrics
     sample_u = test["user_idx"].unique()[:500]

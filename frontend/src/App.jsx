@@ -12,6 +12,7 @@ export default function App() {
   const [userId, setUserId] = useState("");
   const [metrics, setMetrics] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
+  const [recommendModel, setRecommendModel] = useState(null);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [loadingRecs, setLoadingRecs] = useState(false);
   const [error, setError] = useState("");
@@ -23,8 +24,12 @@ export default function App() {
         const response = await fetchMetrics();
         const nextMetrics = response?.metrics || response;
         setMetrics(nextMetrics);
-      } catch {
-        setError("Unable to load metrics right now. Please check backend service.");
+      } catch (e) {
+        setError(
+          e instanceof Error
+            ? e.message
+            : "Unable to load metrics. Start the backend on http://127.0.0.1:8000"
+        );
       } finally {
         setLoadingMetrics(false);
       }
@@ -35,24 +40,34 @@ export default function App() {
 
   const onGetRecommendations = async () => {
     setError("");
-    if (!userId.trim()) {
+    const raw = userId.trim();
+    if (!raw) {
       setError("Please enter a valid user ID.");
+      return;
+    }
+    const uidNum = Number(raw);
+    if (!Number.isInteger(uidNum) || uidNum < 1) {
+      setError("User ID must be a positive integer (e.g. 1).");
       return;
     }
 
     setLoadingRecs(true);
     try {
-      const response = await fetchRecommendations(userId.trim());
+      const response = await fetchRecommendations(String(uidNum));
       const list = response?.recommendations || response?.results || [];
+      setRecommendModel(response?.model || null);
       if (!list.length) {
         setRecommendations([]);
         setError("User not found or no recommendations available.");
       } else {
         setRecommendations(list.slice(0, 10));
       }
-    } catch {
+    } catch (e) {
       setRecommendations([]);
-      setError("Could not fetch recommendations. Verify user ID and backend endpoint.");
+      setRecommendModel(null);
+      setError(
+        e instanceof Error ? e.message : "Could not fetch recommendations."
+      );
     } finally {
       setLoadingRecs(false);
     }
@@ -79,6 +94,7 @@ export default function App() {
                 <div className="lg:col-span-8">
                   <RecommendationTable
                     recommendations={recommendations}
+                    model={recommendModel}
                     isLoading={loadingRecs}
                   />
                 </div>

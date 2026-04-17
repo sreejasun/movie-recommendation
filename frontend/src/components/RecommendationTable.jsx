@@ -1,7 +1,19 @@
 import { Sparkles } from "lucide-react";
 import SkeletonRows from "./SkeletonRows";
 
-export default function RecommendationTable({ recommendations, isLoading }) {
+function modelLabel(model) {
+  if (!model) return null;
+  if (model.engine === "mf" || model.name === "matrix_factorization") {
+    const d = model.latent_factors ?? model.d;
+    return `Matrix factorization (SVD) · d=${d ?? "—"}`;
+  }
+  if (model.engine === "bias" || model.name === "bias_model") {
+    return "Bias model (μ + user/item biases)";
+  }
+  return null;
+}
+
+export default function RecommendationTable({ recommendations, model, isLoading }) {
   if (isLoading) {
     return (
       <section className="glass-panel animate-floatIn p-6">
@@ -28,9 +40,18 @@ export default function RecommendationTable({ recommendations, isLoading }) {
 
   return (
     <section className="glass-panel animate-floatIn overflow-hidden">
-      <div className="border-b border-slate-800 px-6 py-4">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Top 10 Recommendations</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Sorted by predicted rating</p>
+      <div className="border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Top 10 Recommendations</h2>
+          {modelLabel(model) ? (
+            <span className="rounded-full border border-brand-500/40 bg-brand-500/15 px-3 py-1 text-xs font-medium text-red-600 dark:text-red-300">
+              {modelLabel(model)}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Sorted by predicted rating (training-set movies excluded)
+        </p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -50,7 +71,7 @@ export default function RecommendationTable({ recommendations, isLoading }) {
                 <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{index + 1}</td>
                 <td className="px-6 py-4 font-medium">{movie.title}</td>
                 <td className="px-6 py-4 text-right font-semibold text-emerald-400">
-                  {Number(movie.predicted_rating).toFixed(2)}
+                  {Number(movie.predicted_rating).toFixed(3)}
                 </td>
               </tr>
             ))}

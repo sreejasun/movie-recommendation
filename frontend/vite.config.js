@@ -5,10 +5,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    strictPort: false,
     proxy: {
-      "/recommend": "http://127.0.0.1:8000",
-      "/metrics": "http://127.0.0.1:8000",
-      "/results": "http://127.0.0.1:8000"
+      "/recommend": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/metrics": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/results": { target: "http://127.0.0.1:8000", changeOrigin: true }
     }
   }
 });

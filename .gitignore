@@ -1,10 +1,10 @@
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
-data/*.csv
 data/*.parquet
 data/*.gz
 *.egg-info/
 .DS_Store
 .venv/
 frontend/node_modules/
+frontend/dist/

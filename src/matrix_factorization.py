@@ -17,6 +17,8 @@ MF sensitivity fix:
 import numpy as np
 import pandas as pd
 import time
+import pickle
+from pathlib import Path
 
 try:
     from surprise import Dataset, Reader, SVD, accuracy
@@ -279,5 +281,30 @@ def get_topk_recs_mf(
 ) -> list:
     unrated = [m for m in all_str_movie_ids if m not in rated_str_movie_ids]
     scores  = [(m, model.algo.predict(str_user_id, m).est) for m in unrated]
-    scores.sort(key=lambda x: x[1], reverse=True)
+    # Descending score, then ascending movie id for deterministic tie-breaks
+    scores.sort(key=lambda x: (-float(x[1]), int(x[0]) if str(x[0]).isdigit() else x[0]))
     return scores[:k]
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Save / Load MF models for backend serving
+# ─────────────────────────────────────────────────────────────────────
+
+def save_mf_model(model: SurpriseMF, filepath: str | Path) -> None:
+    """Save a trained SurpriseMF model to disk (pickle format)."""
+    filepath = Path(filepath)
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    with open(filepath, "wb") as f:
+        pickle.dump(model.algo, f)
+    print(f"[save_mf_model] saved to {filepath}")
+
+
+def load_mf_model(filepath: str | Path):
+    """Load a trained SurpriseMF algo object from disk."""
+    filepath = Path(filepath)
+    if not filepath.exists():
+        raise FileNotFoundError(f"MF model not found at {filepath}")
+    with open(filepath, "rb") as f:
+        algo = pickle.load(f)
+    print(f"[load_mf_model] loaded from {filepath}")
+    return algo
